@@ -440,6 +440,25 @@ impl Board {
         }
     }
 
+    /// Get en passant square
+    pub fn en_passant_square(&self) -> Option<Square> {
+        self.en_passant_square
+    }
+
+    /// Make a move without legality checking (for internal use)
+    pub fn make_move_unchecked(&mut self, from: Square, to: Square) {
+        if let Some(piece) = self.piece_at(from) {
+            self.clear_piece(from);
+            self.clear_piece(to); // Clear destination (handles captures)
+            self.set_piece(to, piece);
+        }
+    }
+
+    /// Swap side to move
+    pub fn swap_side(&mut self) {
+        self.side_to_move = self.side_to_move.opponent();
+    }
+
     // REQ-5: FEN Parsing and Generation
 
     /// Parse FEN string to create board
