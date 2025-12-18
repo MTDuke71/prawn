@@ -62,22 +62,79 @@ if ([string]::IsNullOrWhiteSpace($Message)) {
         # Use GitHub Copilot CLI
         $Message = gh copilot suggest -t git "Generate a concise commit message for these changes: $diff" | Select-Object -Last 1
     } else {
-        # Fallback: Generate based on changed files
-        $changedFiles = git diff --cached --name-only
-        $fileList = $changedFiles -join ", "
+        # Fallback: Analyze diff and generate meaningful message
+        $changedFiles = @(git diff --cached --name-only)
+        $diffContent = git diff --cached
         
+        # Check for specific patterns in the diff
+        $isNewFile = $diffContent -match 'new file mode'
+        $isDeletedFile = $diffContent -match 'deleted file mode'
+        $hasFunction = $diffContent -match '(fn |function |def |class |pub fn |async fn )'
+        $hasTest = $diffContent -match '(#\[test\]|#\[cfg\(test\)\]|test_|_test\.)'
+        $hasDoc = $diffContent -match '(//!|///|/\*\*|\.md)'
+        $hasFix = $diffContent -match '(fix|bug|error|correct|Fix|Bug|Error)'
+        $hasRefactor = $diffContent -match '(refactor|restructure|reorganize|Refactor)'
+        $hasFeature = $diffContent -match '(\+.*fn |\+.*function |\+.*impl )'
+        
+        # Generate smart message based on analysis
         if ($changedFiles.Count -eq 1) {
-            $Message = "Update $($changedFiles[0])"
-        } elseif ($changedFiles.Count -le 3) {
-            $Message = "Update $fileList"
-        } else {
-            $extensions = $changedFiles | ForEach-Object { [System.IO.Path]::GetExtension($_) } | Select-Object -Unique
-            if ($extensions -contains ".rs") {
-                $Message = "Update Rust code ($($changedFiles.Count) files)"
-            } elseif ($extensions -contains ".md") {
-                $Message = "Update documentation ($($changedFiles.Count) files)"
+            $file = $changedFiles[0].Trim()
+            $fileName = [System.IO.Path]::GetFileNameWithoutExtension($file)
+            $fullFileName = [System.IO.Path]::GetFileName($file)
+            
+            if ($isNewFile) {
+                $Message = "Add $fullFileName"
+            } elseif ($isDeletedFile) {
+                $Message = "Remove $fullFileName"
+            } elseif ($hasTest -and $file -match 'test') {
+                $Message = "Add tests for $fileName"
+            } elseif ($hasDoc -and $file -match '\.md$') {
+                $Message = "Update $fullFileName documentation"
+            } elseif ($hasFix) {
+                $Message = "Fix issues in $fullFileName"
+            } elseif ($hasRefactor) {
+                $Message = "Refactor $fullFileName"
+            } elseif ($hasFeature) {
+                $Message = "Add functionality to $fullFileName"
+            } elseif ($file -match 'scripts/') {
+                $Message = "Update $fullFileName script"
             } else {
-                $Message = "Update $($changedFiles.Count) files"
+                # More descriptive default based on file type
+                if ($file -match '\.rs$') {
+                    $Message = "Update $fullFileName implementation"
+                } elseif ($file -match '\.(ps1|sh|py)$') {
+                    $Message = "Modify $fullFileName script"
+                } else {
+                    $Message = "Update $fullFileName"
+                }
+            }
+        } else {
+            # Multiple files
+            $rustFiles = $changedFiles | Where-Object { $_ -match '\.rs$' }
+            $mdFiles = $changedFiles | Where-Object { $_ -match '\.md$' }
+            $scriptFiles = $changedFiles | Where-Object { $_ -match '\.(ps1|sh|py)$' }
+            
+            if ($isNewFile) {
+                $Message = "Add new files ($($changedFiles.Count) files)"
+            } elseif ($hasTest) {
+                $Message = "Add and update tests ($($changedFiles.Count) files)"
+            } elseif ($rustFiles.Count -eq $changedFiles.Count) {
+                if ($hasFix) {
+                    $Message = "Fix bugs in Rust code"
+                } elseif ($hasRefactor) {
+                    $Message = "Refactor Rust implementation"
+                } else {
+                    $Message = "Update Rust code ($($rustFiles.Count) files)"
+                }
+            } elseif ($mdFiles.Count -eq $changedFiles.Count) {
+                $Message = "Update documentation"
+            } elseif ($scriptFiles.Count -gt 0 -and $scriptFiles.Count -eq $changedFiles.Count) {
+                $Message = "Update build scripts and tooling"
+            } elseif ($changedFiles.Count -le 3) {
+                $fileNames = ($changedFiles | ForEach-Object { [System.IO.Path]::GetFileName($_.Trim()) }) -join ", "
+                $Message = "Update $fileNames"
+            } else {
+                $Message = "Update multiple files ($($changedFiles.Count) files)"
             }
         }
     }
