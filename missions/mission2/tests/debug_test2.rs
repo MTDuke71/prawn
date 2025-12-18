@@ -22,6 +22,7 @@ fn debug_move_execution() {
     println!("  White king in check: {}", movegen.is_in_check(&board, Color::White));
     println!("  Black king in check: {}", movegen.is_in_check(&board, Color::Black));
     
-    // The white king should be in check from the rook
-    assert!(movegen.is_in_check(&board, Color::White), "White king should be in check");
+    // The pawn moved along the pin ray (E4->E5), so it still blocks the rook
+    // White king should NOT be in check
+    assert!(!movegen.is_in_check(&board, Color::White), "White king should NOT be in check (pawn still blocks)");
 }

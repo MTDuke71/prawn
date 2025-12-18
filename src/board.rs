@@ -445,6 +445,16 @@ impl Board {
         self.en_passant_square
     }
 
+    /// Set en passant square
+    pub fn set_en_passant_square(&mut self, square: Option<Square>) {
+        self.en_passant_square = square;
+    }
+
+    /// Clear castling rights
+    pub fn clear_castling_rights(&mut self, mask: u8) {
+        self.castling_rights &= !mask;
+    }
+
     /// Make a move without legality checking (for internal use)
     pub fn make_move_unchecked(&mut self, from: Square, to: Square) {
         if let Some(piece) = self.piece_at(from) {
