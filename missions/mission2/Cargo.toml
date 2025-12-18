@@ -1,0 +1,9 @@
+[package]
+name = "mission2_movegen"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+prawn = { path = "../.." }
+
+[dev-dependencies]
