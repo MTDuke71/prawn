@@ -1,0 +1,34 @@
+
+=== Perft Benchmark Run: 2025-12-17 21:35:06 ===
+Build mode: RELEASE
+
+Starting Position (rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1)
+  Depth 1: 20 nodes in 0.00s (330033 nodes/sec) ✓ PASS
+  Depth 2: 400 nodes in 0.00s (19512195 nodes/sec) ✓ PASS
+  Depth 3: 8902 nodes in 0.00s (26029240 nodes/sec) ✓ PASS
+  Depth 4: 197281 nodes in 0.01s (22613854 nodes/sec) ✓ PASS
+  Depth 5: 4865609 nodes in 0.17s (29092354 nodes/sec) ✓ PASS
+  Depth 6: 119060324 nodes in 4.36s (27298047 nodes/sec) ✓ PASS
+
+Kiwipete Position (r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -)
+
+=== Perft Benchmark Run: 2025-12-17 21:35:38 ===
+Build mode: RELEASE
+
+Starting Position (rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1)
+  Depth 1: 20 nodes in 0.00s (5263158 nodes/sec) ✓ PASS
+  Depth 2: 400 nodes in 0.00s (21739130 nodes/sec) ✓ PASS
+  Depth 3: 8902 nodes in 0.00s (23014478 nodes/sec) ✓ PASS
+  Depth 4: 197281 nodes in 0.01s (27375425 nodes/sec) ✓ PASS
+  Depth 5: 4865609 nodes in 0.17s (29306961 nodes/sec) ✓ PASS
+  Depth 6: 119060324 nodes in 4.35s (27392245 nodes/sec) ✓ PASS
+
+Kiwipete Position (r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1)
+  Depth 1: 48 nodes in 0.00s (8275862 nodes/sec) ✓ PASS
+  Depth 2: 2039 nodes in 0.00s (24101655 nodes/sec) ✓ PASS
+  Depth 3: 97862 nodes in 0.00s (26914741 nodes/sec) ✓ PASS
+  Depth 4: 4085603 nodes in 0.15s (27160236 nodes/sec) ✓ PASS
+  Depth 5: 193690690 nodes in 6.80s (28501475 nodes/sec) ✓ PASS
+
+=== Benchmark Complete ===
+

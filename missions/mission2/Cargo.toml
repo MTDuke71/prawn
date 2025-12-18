@@ -5,5 +5,6 @@ edition = "2021"
 
 [dependencies]
 prawn = { path = "../.." }
+chrono = "0.4"
 
 [dev-dependencies]
