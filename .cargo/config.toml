@@ -1,0 +1,9 @@
+# Cargo configuration for prawn chess engine
+
+# Test configuration
+[alias]
+# Run quick tests (skips depth 6 starting position and depth 5 kiwipete)
+test-quick = "test -- --skip perft_startpos_depth_6 --skip perft_kiwipete_depth_5"
+
+# Run all tests including slow ones
+test-all = "test"
