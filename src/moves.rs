@@ -16,6 +16,9 @@ pub struct Move {
 // Bits 20-22: promotion piece type (if any)
 
 impl Move {
+    /// Null move constant for array initialization
+    pub const NULL: Move = Move { data: 0 };
+
     /// Create a quiet move (no capture, no special)
     pub fn new_quiet(from: Square, to: Square) -> Self {
         Move {

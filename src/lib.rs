@@ -10,9 +10,19 @@ pub mod magic;
 pub mod movegen;
 pub mod moves;
 
+// Mission 3: Move Execution
+pub mod game_state;
+pub mod undo_info;
+pub mod zobrist;
+
 // Re-export main types for convenience
 pub use attacks::AttackTables;
 pub use board_ext::BoardExt;
 pub use magic::MagicTable;
 pub use movegen::MoveGenerator;
 pub use moves::{Move, MoveList, MoveType};
+
+// Mission 3 re-exports
+pub use game_state::GameState;
+pub use undo_info::UndoInfo;
+pub use zobrist::ZobristHasher;
