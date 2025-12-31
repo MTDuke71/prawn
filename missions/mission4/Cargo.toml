@@ -1,0 +1,12 @@
+[package]
+name = "mission4"
+version = "0.1.0"
+edition = "2021"
+description = "Mission 4: Basic UCI / Debug Shell"
+
+[dependencies]
+# Use the main prawn crate for board, movegen, game_state
+prawn = { path = "../.." }
+
+[dev-dependencies]
+# No additional test dependencies needed

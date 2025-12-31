@@ -8,6 +8,7 @@ members = [
     ".",
     "missions/mission2",
     "missions/mission3",
+    "missions/mission4",
 ]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
