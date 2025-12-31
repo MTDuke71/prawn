@@ -16,10 +16,15 @@ pub struct Move {
 // Bits 20-22: promotion piece type (if any)
 
 impl Move {
+    /// Null move constant for array initialization
+    pub const NULL: Move = Move { data: 0 };
+
     /// Create a quiet move (no capture, no special)
     pub fn new_quiet(from: Square, to: Square) -> Self {
         Move {
-            data: (from.index() as u32) | ((to.index() as u32) << 6) | (MoveType::Quiet as u32) << 12,
+            data: (from.index() as u32)
+                | ((to.index() as u32) << 6)
+                | (MoveType::Quiet as u32) << 12,
         }
     }
 
@@ -80,7 +85,12 @@ impl Move {
     }
 
     /// Create a capture promotion
-    pub fn new_capture_promotion(from: Square, to: Square, captured: Piece, promotion: PieceType) -> Self {
+    pub fn new_capture_promotion(
+        from: Square,
+        to: Square,
+        captured: Piece,
+        promotion: PieceType,
+    ) -> Self {
         Move {
             data: (from.index() as u32)
                 | ((to.index() as u32) << 6)

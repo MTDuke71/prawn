@@ -101,7 +101,11 @@ impl MoveGenerator {
                 } else {
                     // Check for double pawn push
                     let starting_rank = if color == Color::White { 1 } else { 6 };
-                    if from.rank() == starting_rank && to.rank() == (starting_rank as i8 + if color == Color::White { 2 } else { -2 }) as u8 {
+                    if from.rank() == starting_rank
+                        && to.rank()
+                            == (starting_rank as i8 + if color == Color::White { 2 } else { -2 })
+                                as u8
+                    {
                         moves.push(Move::new_double_pawn_push(from, to));
                     } else {
                         moves.push(Move::new_quiet(from, to));
@@ -128,10 +132,30 @@ impl MoveGenerator {
                     // Check for promotion
                     let promotion_rank = if color == Color::White { 7 } else { 0 };
                     if to.rank() == promotion_rank {
-                        moves.push(Move::new_capture_promotion(from, to, captured, PieceType::Queen));
-                        moves.push(Move::new_capture_promotion(from, to, captured, PieceType::Rook));
-                        moves.push(Move::new_capture_promotion(from, to, captured, PieceType::Bishop));
-                        moves.push(Move::new_capture_promotion(from, to, captured, PieceType::Knight));
+                        moves.push(Move::new_capture_promotion(
+                            from,
+                            to,
+                            captured,
+                            PieceType::Queen,
+                        ));
+                        moves.push(Move::new_capture_promotion(
+                            from,
+                            to,
+                            captured,
+                            PieceType::Rook,
+                        ));
+                        moves.push(Move::new_capture_promotion(
+                            from,
+                            to,
+                            captured,
+                            PieceType::Bishop,
+                        ));
+                        moves.push(Move::new_capture_promotion(
+                            from,
+                            to,
+                            captured,
+                            PieceType::Knight,
+                        ));
                     } else {
                         moves.push(Move::new_capture(from, to, captured));
                     }
@@ -248,11 +272,11 @@ impl MoveGenerator {
                 if board.can_castle_kingside(Color::White) {
                     // Squares between king and rook must be empty
                     let between = (1u64 << Square::F1.index()) | (1u64 << Square::G1.index());
-                    if (all_occupancy & between) == 0 {
+                    if (all_occupancy & between) == 0
+                        && !self.is_square_attacked(board, Square::F1, Color::Black)
+                    {
                         // King cannot move through check
-                        if !self.is_square_attacked(board, Square::F1, Color::Black) {
-                            moves.push(Move::new_kingside_castle(Square::E1, Square::G1));
-                        }
+                        moves.push(Move::new_kingside_castle(Square::E1, Square::G1));
                     }
                 }
 
@@ -261,10 +285,10 @@ impl MoveGenerator {
                     let between = (1u64 << Square::B1.index())
                         | (1u64 << Square::C1.index())
                         | (1u64 << Square::D1.index());
-                    if (all_occupancy & between) == 0 {
-                        if !self.is_square_attacked(board, Square::D1, Color::Black) {
-                            moves.push(Move::new_queenside_castle(Square::E1, Square::C1));
-                        }
+                    if (all_occupancy & between) == 0
+                        && !self.is_square_attacked(board, Square::D1, Color::Black)
+                    {
+                        moves.push(Move::new_queenside_castle(Square::E1, Square::C1));
                     }
                 }
             }
@@ -272,10 +296,10 @@ impl MoveGenerator {
                 // Kingside castle
                 if board.can_castle_kingside(Color::Black) {
                     let between = (1u64 << Square::F8.index()) | (1u64 << Square::G8.index());
-                    if (all_occupancy & between) == 0 {
-                        if !self.is_square_attacked(board, Square::F8, Color::White) {
-                            moves.push(Move::new_kingside_castle(Square::E8, Square::G8));
-                        }
+                    if (all_occupancy & between) == 0
+                        && !self.is_square_attacked(board, Square::F8, Color::White)
+                    {
+                        moves.push(Move::new_kingside_castle(Square::E8, Square::G8));
                     }
                 }
 
@@ -284,10 +308,10 @@ impl MoveGenerator {
                     let between = (1u64 << Square::B8.index())
                         | (1u64 << Square::C8.index())
                         | (1u64 << Square::D8.index());
-                    if (all_occupancy & between) == 0 {
-                        if !self.is_square_attacked(board, Square::D8, Color::White) {
-                            moves.push(Move::new_queenside_castle(Square::E8, Square::C8));
-                        }
+                    if (all_occupancy & between) == 0
+                        && !self.is_square_attacked(board, Square::D8, Color::White)
+                    {
+                        moves.push(Move::new_queenside_castle(Square::E8, Square::C8));
                     }
                 }
             }
@@ -328,13 +352,21 @@ impl MoveGenerator {
 
         // Check bishop/queen diagonal attacks
         let bishop_attacks = self.magic_table.bishop_attacks(square, all_occupancy);
-        if (bishop_attacks & (board.piece_bitboard(by_color, PieceType::Bishop) | board.piece_bitboard(by_color, PieceType::Queen))) != 0 {
+        if (bishop_attacks
+            & (board.piece_bitboard(by_color, PieceType::Bishop)
+                | board.piece_bitboard(by_color, PieceType::Queen)))
+            != 0
+        {
             return true;
         }
 
         // Check rook/queen orthogonal attacks
         let rook_attacks = self.magic_table.rook_attacks(square, all_occupancy);
-        if (rook_attacks & (board.piece_bitboard(by_color, PieceType::Rook) | board.piece_bitboard(by_color, PieceType::Queen))) != 0 {
+        if (rook_attacks
+            & (board.piece_bitboard(by_color, PieceType::Rook)
+                | board.piece_bitboard(by_color, PieceType::Queen)))
+            != 0
+        {
             return true;
         }
 

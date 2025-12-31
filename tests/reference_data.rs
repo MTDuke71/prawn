@@ -17,7 +17,7 @@ g2h3: 43
 
 // We need to verify if e4e5 should exist. Looking at position:
 // r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1
-// 
+//
 // Rank 5: ...PN... means pawn on D5, Knight on E5
 // Rank 4: .p..P... means black pawn b4, White Pawn E4
 //

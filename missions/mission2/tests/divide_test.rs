@@ -7,7 +7,7 @@ fn perft(movegen: &MoveGenerator, board: &Board, depth: u32) -> u64 {
     }
 
     let moves = movegen.generate_legal_moves(board);
-    
+
     if depth == 1 {
         return moves.len() as u64;
     }
@@ -32,7 +32,11 @@ fn perft_divide(movegen: &MoveGenerator, board: &Board, depth: u32) -> u64 {
         let mut new_board = board.clone();
         use mission2_movegen::board_ext::BoardExt;
         new_board.make_move_complete(*m);
-        let count = if depth > 1 { perft(movegen, &new_board, depth - 1) } else { 1 };
+        let count = if depth > 1 {
+            perft(movegen, &new_board, depth - 1)
+        } else {
+            1
+        };
         println!("{}: {}", m.to_uci(), count);
         total += count;
     }
@@ -43,7 +47,9 @@ fn perft_divide(movegen: &MoveGenerator, board: &Board, depth: u32) -> u64 {
 
 #[test]
 fn divide_kiwipete_depth_2() {
-    let board = Board::from_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1").unwrap();
+    let board =
+        Board::from_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1")
+            .unwrap();
     let movegen = MoveGenerator::new();
 
     let result = perft_divide(&movegen, &board, 2);

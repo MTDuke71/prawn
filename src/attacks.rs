@@ -4,7 +4,7 @@ use crate::board::{Color, Square};
 
 /// Attack tables for all piece types
 pub struct AttackTables {
-    pub pawn_attacks: [[u64; 64]; 2],  // [color][square]
+    pub pawn_attacks: [[u64; 64]; 2], // [color][square]
     pub knight_attacks: [u64; 64],
     pub king_attacks: [u64; 64],
 }
@@ -130,7 +130,7 @@ fn generate_knight_attacks(square: Square) -> u64 {
         let new_rank = rank + rank_offset;
         let new_file = file + file_offset;
 
-        if new_rank >= 0 && new_rank < 8 && new_file >= 0 && new_file < 8 {
+        if (0..8).contains(&new_rank) && (0..8).contains(&new_file) {
             attacks |= 1u64 << (new_rank * 8 + new_file);
         }
     }
@@ -160,7 +160,7 @@ fn generate_king_attacks(square: Square) -> u64 {
         let new_rank = rank + rank_offset;
         let new_file = file + file_offset;
 
-        if new_rank >= 0 && new_rank < 8 && new_file >= 0 && new_file < 8 {
+        if (0..8).contains(&new_rank) && (0..8).contains(&new_file) {
             attacks |= 1u64 << (new_rank * 8 + new_file);
         }
     }

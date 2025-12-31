@@ -99,7 +99,9 @@ fn perft_startpos_depth_6() {
 
 #[test]
 fn perft_kiwipete_depth_1() {
-    let board = Board::from_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1").unwrap();
+    let board =
+        Board::from_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1")
+            .unwrap();
     let movegen = MoveGenerator::new();
 
     assert_eq!(perft(&movegen, &board, 1), 48);
@@ -107,7 +109,9 @@ fn perft_kiwipete_depth_1() {
 
 #[test]
 fn perft_kiwipete_depth_2() {
-    let board = Board::from_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1").unwrap();
+    let board =
+        Board::from_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1")
+            .unwrap();
     let movegen = MoveGenerator::new();
 
     assert_eq!(perft(&movegen, &board, 2), 2_039);
@@ -115,7 +119,9 @@ fn perft_kiwipete_depth_2() {
 
 #[test]
 fn perft_kiwipete_depth_3() {
-    let board = Board::from_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1").unwrap();
+    let board =
+        Board::from_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1")
+            .unwrap();
     let movegen = MoveGenerator::new();
 
     assert_eq!(perft(&movegen, &board, 3), 97_862);
@@ -124,7 +130,9 @@ fn perft_kiwipete_depth_3() {
 #[test]
 #[ignore] // Takes a few seconds
 fn perft_kiwipete_depth_4() {
-    let board = Board::from_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1").unwrap();
+    let board =
+        Board::from_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1")
+            .unwrap();
     let movegen = MoveGenerator::new();
 
     assert_eq!(perft(&movegen, &board, 4), 4_085_603);
@@ -133,7 +141,9 @@ fn perft_kiwipete_depth_4() {
 #[test]
 #[ignore] // Takes ~1-2 minutes
 fn perft_kiwipete_depth_5() {
-    let board = Board::from_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1").unwrap();
+    let board =
+        Board::from_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1")
+            .unwrap();
     let movegen = MoveGenerator::new();
 
     assert_eq!(perft(&movegen, &board, 5), 193_690_690);
@@ -190,7 +200,8 @@ fn perft_position3_depth_5() {
 
 #[test]
 fn perft_position4_depth_1() {
-    let board = Board::from_fen("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1").unwrap();
+    let board = Board::from_fen("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1")
+        .unwrap();
     let movegen = MoveGenerator::new();
 
     assert_eq!(perft(&movegen, &board, 1), 6);
@@ -198,7 +209,8 @@ fn perft_position4_depth_1() {
 
 #[test]
 fn perft_position4_depth_2() {
-    let board = Board::from_fen("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1").unwrap();
+    let board = Board::from_fen("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1")
+        .unwrap();
     let movegen = MoveGenerator::new();
 
     assert_eq!(perft(&movegen, &board, 2), 264);
@@ -206,7 +218,8 @@ fn perft_position4_depth_2() {
 
 #[test]
 fn perft_position4_depth_3() {
-    let board = Board::from_fen("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1").unwrap();
+    let board = Board::from_fen("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1")
+        .unwrap();
     let movegen = MoveGenerator::new();
 
     assert_eq!(perft(&movegen, &board, 3), 9_467);
@@ -215,7 +228,8 @@ fn perft_position4_depth_3() {
 #[test]
 #[ignore] // Takes a few seconds
 fn perft_position4_depth_4() {
-    let board = Board::from_fen("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1").unwrap();
+    let board = Board::from_fen("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1")
+        .unwrap();
     let movegen = MoveGenerator::new();
 
     assert_eq!(perft(&movegen, &board, 4), 422_333);
@@ -227,7 +241,8 @@ fn perft_position4_depth_4() {
 
 #[test]
 fn perft_position5_depth_1() {
-    let board = Board::from_fen("rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8").unwrap();
+    let board =
+        Board::from_fen("rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8").unwrap();
     let movegen = MoveGenerator::new();
 
     assert_eq!(perft(&movegen, &board, 1), 44);
@@ -235,7 +250,8 @@ fn perft_position5_depth_1() {
 
 #[test]
 fn perft_position5_depth_2() {
-    let board = Board::from_fen("rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8").unwrap();
+    let board =
+        Board::from_fen("rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8").unwrap();
     let movegen = MoveGenerator::new();
 
     assert_eq!(perft(&movegen, &board, 2), 1_486);
@@ -243,7 +259,8 @@ fn perft_position5_depth_2() {
 
 #[test]
 fn perft_position5_depth_3() {
-    let board = Board::from_fen("rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8").unwrap();
+    let board =
+        Board::from_fen("rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8").unwrap();
     let movegen = MoveGenerator::new();
 
     assert_eq!(perft(&movegen, &board, 3), 62_379);
@@ -252,7 +269,8 @@ fn perft_position5_depth_3() {
 #[test]
 #[ignore] // Takes a few seconds
 fn perft_position5_depth_4() {
-    let board = Board::from_fen("rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8").unwrap();
+    let board =
+        Board::from_fen("rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8").unwrap();
     let movegen = MoveGenerator::new();
 
     assert_eq!(perft(&movegen, &board, 4), 2_103_487);
@@ -264,7 +282,9 @@ fn perft_position5_depth_4() {
 
 #[test]
 fn perft_position6_depth_1() {
-    let board = Board::from_fen("r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10").unwrap();
+    let board =
+        Board::from_fen("r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10")
+            .unwrap();
     let movegen = MoveGenerator::new();
 
     assert_eq!(perft(&movegen, &board, 1), 46);
@@ -272,7 +292,9 @@ fn perft_position6_depth_1() {
 
 #[test]
 fn perft_position6_depth_2() {
-    let board = Board::from_fen("r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10").unwrap();
+    let board =
+        Board::from_fen("r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10")
+            .unwrap();
     let movegen = MoveGenerator::new();
 
     assert_eq!(perft(&movegen, &board, 2), 2_079);
@@ -280,7 +302,9 @@ fn perft_position6_depth_2() {
 
 #[test]
 fn perft_position6_depth_3() {
-    let board = Board::from_fen("r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10").unwrap();
+    let board =
+        Board::from_fen("r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10")
+            .unwrap();
     let movegen = MoveGenerator::new();
 
     assert_eq!(perft(&movegen, &board, 3), 89_890);
@@ -289,7 +313,9 @@ fn perft_position6_depth_3() {
 #[test]
 #[ignore] // Takes a few seconds
 fn perft_position6_depth_4() {
-    let board = Board::from_fen("r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10").unwrap();
+    let board =
+        Board::from_fen("r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10")
+            .unwrap();
     let movegen = MoveGenerator::new();
 
     assert_eq!(perft(&movegen, &board, 4), 3_894_594);

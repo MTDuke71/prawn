@@ -90,8 +90,12 @@ impl BoardExt for Board {
                 crate::moves::MoveType::EnPassant => {
                     // Remove captured pawn
                     let captured_square = match color {
-                        Color::White => Square::from_index((to.rank() - 1) * 8 + to.file()).unwrap(),
-                        Color::Black => Square::from_index((to.rank() + 1) * 8 + to.file()).unwrap(),
+                        Color::White => {
+                            Square::from_index((to.rank() - 1) * 8 + to.file()).unwrap()
+                        }
+                        Color::Black => {
+                            Square::from_index((to.rank() + 1) * 8 + to.file()).unwrap()
+                        }
                     };
                     self.clear_piece(captured_square);
                     self.set_piece(to, piece);

@@ -16,7 +16,10 @@ fn req1_pawn_single_move() {
     let moves = movegen.generate_legal_moves(&board);
 
     // White pawn on E2 can move to E3
-    assert!(moves.moves().iter().any(|m| m.from() == Square::E2 && m.to() == Square::E3));
+    assert!(moves
+        .moves()
+        .iter()
+        .any(|m| m.from() == Square::E2 && m.to() == Square::E3));
 }
 
 #[test]
@@ -26,7 +29,10 @@ fn req1_pawn_double_move() {
     let moves = movegen.generate_legal_moves(&board);
 
     // White pawn on E2 can move to E4 (double push)
-    assert!(moves.moves().iter().any(|m| m.from() == Square::E2 && m.to() == Square::E4));
+    assert!(moves
+        .moves()
+        .iter()
+        .any(|m| m.from() == Square::E2 && m.to() == Square::E4));
     assert_eq!(moves.len(), 2); // E3 and E4
 }
 
@@ -70,7 +76,9 @@ fn req1_en_passant() {
     let moves = movegen.generate_legal_moves(&board);
 
     // Should have en passant capture
-    let ep_moves: Vec<&Move> = moves.moves().iter()
+    let ep_moves: Vec<&Move> = moves
+        .moves()
+        .iter()
         .filter(|m| matches!(m.move_type(), prawn::moves::MoveType::EnPassant))
         .collect();
     assert!(ep_moves.len() > 0);
@@ -108,7 +116,9 @@ fn req2_knight_blocked_by_own_pieces() {
 
     // Knight surrounded by own pawns but can still move to empty squares
     // Note: This position has no king, so technically all moves are "legal"
-    let knight_moves: Vec<&Move> = moves.moves().iter()
+    let knight_moves: Vec<&Move> = moves
+        .moves()
+        .iter()
         .filter(|m| m.from() == Square::D5)
         .collect();
     assert_eq!(knight_moves.len(), 8); // Can move to all 8 L-shaped squares
@@ -135,7 +145,9 @@ fn req3_bishop_blocked() {
     let moves = movegen.generate_legal_moves(&board);
 
     // Bishop blocked by own pawns
-    let bishop_moves: Vec<&Move> = moves.moves().iter()
+    let bishop_moves: Vec<&Move> = moves
+        .moves()
+        .iter()
         .filter(|m| m.from() == Square::E4)
         .collect();
     // Should have fewer than 13 moves
@@ -149,7 +161,9 @@ fn req3_bishop_captures() {
     let moves = movegen.generate_legal_moves(&board);
 
     // Bishop can capture enemy pawns
-    let captures: Vec<&Move> = moves.moves().iter()
+    let captures: Vec<&Move> = moves
+        .moves()
+        .iter()
         .filter(|m| m.is_capture() && m.from() == Square::E4)
         .collect();
     assert_eq!(captures.len(), 2); // C2 and G6
@@ -176,7 +190,9 @@ fn req4_rook_blocked() {
     let moves = movegen.generate_legal_moves(&board);
 
     // Rook blocked by own pawns
-    let rook_moves: Vec<&Move> = moves.moves().iter()
+    let rook_moves: Vec<&Move> = moves
+        .moves()
+        .iter()
         .filter(|m| m.from() == Square::E4)
         .collect();
     // Can only move to F4, G4 (east) and B4, C4, D4 (west)
@@ -190,7 +206,9 @@ fn req4_rook_captures() {
     let moves = movegen.generate_legal_moves(&board);
 
     // Rook can capture in all 4 directions
-    let captures: Vec<&Move> = moves.moves().iter()
+    let captures: Vec<&Move> = moves
+        .moves()
+        .iter()
         .filter(|m| m.is_capture() && m.from() == Square::E4)
         .collect();
     assert_eq!(captures.len(), 4);
@@ -217,7 +235,9 @@ fn req5_queen_all_directions() {
     let moves = movegen.generate_legal_moves(&board);
 
     // Verify queen can move in all 8 directions
-    let queen_moves: Vec<&Move> = moves.moves().iter()
+    let queen_moves: Vec<&Move> = moves
+        .moves()
+        .iter()
         .filter(|m| m.from() == Square::E4)
         .collect();
     assert_eq!(queen_moves.len(), 27);
@@ -258,9 +278,7 @@ fn req7_kingside_castle() {
     let moves = movegen.generate_legal_moves(&board);
 
     // Should be able to castle kingside
-    let castle_moves: Vec<&Move> = moves.moves().iter()
-        .filter(|m| m.is_castle())
-        .collect();
+    let castle_moves: Vec<&Move> = moves.moves().iter().filter(|m| m.is_castle()).collect();
     assert!(castle_moves.len() > 0);
 }
 
@@ -271,9 +289,7 @@ fn req7_queenside_castle() {
     let moves = movegen.generate_legal_moves(&board);
 
     // Should be able to castle queenside
-    let castle_moves: Vec<&Move> = moves.moves().iter()
-        .filter(|m| m.is_castle())
-        .collect();
+    let castle_moves: Vec<&Move> = moves.moves().iter().filter(|m| m.is_castle()).collect();
     assert!(castle_moves.len() > 0);
 }
 
@@ -284,9 +300,7 @@ fn req7_castle_blocked() {
     let moves = movegen.generate_legal_moves(&board);
 
     // Cannot castle - knight in the way
-    let castle_moves: Vec<&Move> = moves.moves().iter()
-        .filter(|m| m.is_castle())
-        .collect();
+    let castle_moves: Vec<&Move> = moves.moves().iter().filter(|m| m.is_castle()).collect();
     assert_eq!(castle_moves.len(), 0);
 }
 
@@ -298,9 +312,7 @@ fn req7_castle_through_check() {
     let moves = movegen.generate_legal_moves(&board);
 
     // Cannot castle - would move through check on F1
-    let castle_moves: Vec<&Move> = moves.moves().iter()
-        .filter(|m| m.is_castle())
-        .collect();
+    let castle_moves: Vec<&Move> = moves.moves().iter().filter(|m| m.is_castle()).collect();
     assert_eq!(castle_moves.len(), 0);
 }
 
@@ -328,7 +340,9 @@ fn req8_pinned_piece() {
     let moves = movegen.generate_legal_moves(&board);
 
     // Pawn on E4 CAN move to E5 (along the pin ray)
-    let pawn_moves: Vec<&Move> = moves.moves().iter()
+    let pawn_moves: Vec<&Move> = moves
+        .moves()
+        .iter()
         .filter(|m| m.from() == Square::E4)
         .collect();
     assert_eq!(pawn_moves.len(), 1); // E4->E5 is legal
@@ -364,16 +378,19 @@ fn req9_no_check() {
 #[test]
 fn req10_checkmate_detected() {
     let movegen = MoveGenerator::new();
-    
+
     // Fool's mate position: white is checkmated
-    let board = Board::from_fen("rnb1kbnr/pppp1ppp/8/4p3/6Pq/5P2/PPPPP2P/RNBQKBNR w KQkq - 1 3").unwrap();
+    let board =
+        Board::from_fen("rnb1kbnr/pppp1ppp/8/4p3/6Pq/5P2/PPPPP2P/RNBQKBNR w KQkq - 1 3").unwrap();
     assert!(movegen.is_checkmate(&board));
 }
 
 #[test]
 fn req10_scholars_mate() {
     // Scholar's mate position
-    let board = Board::from_fen("r1bqkb1r/pppp1Qpp/2n2n2/4p3/2B1P3/8/PPPP1PPP/RNB1K1NR b KQkq - 0 1").unwrap();
+    let board =
+        Board::from_fen("r1bqkb1r/pppp1Qpp/2n2n2/4p3/2B1P3/8/PPPP1PPP/RNB1K1NR b KQkq - 0 1")
+            .unwrap();
     let movegen = MoveGenerator::new();
 
     // Black is in checkmate

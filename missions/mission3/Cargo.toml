@@ -1,0 +1,10 @@
+[package]
+name = "mission3_move_execution"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+prawn = { path = "../.." }
+mission2_movegen = { path = "../mission2" }
+
+[dev-dependencies]

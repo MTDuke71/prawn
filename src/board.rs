@@ -309,6 +309,7 @@ impl BitboardOps {
 // ============================================================================
 
 /// Chess board representation using bitboards
+/// Hybrid approach: bitboards for move generation + mailbox for O(1) piece lookup
 #[derive(Clone)]
 pub struct Board {
     // Piece bitboards: [color][piece_type]
@@ -318,6 +319,9 @@ pub struct Board {
     rooks: [u64; 2],
     queens: [u64; 2],
     kings: [u64; 2],
+
+    // Mailbox for O(1) piece lookup - critical for make/unmake speed
+    mailbox: [Option<Piece>; 64],
 
     // Game state
     side_to_move: Color,
@@ -337,12 +341,19 @@ impl Board {
             rooks: [0, 0],
             queens: [0, 0],
             kings: [0, 0],
+            mailbox: [None; 64],
             side_to_move: Color::White,
             castling_rights: 0,
             en_passant_square: None,
             halfmove_clock: 0,
             fullmove_number: 1,
         }
+    }
+
+    /// Create board with starting position
+    pub fn starting_position() -> Self {
+        Self::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+            .expect("Default FEN should always be valid")
     }
 
     /// Get bitboard for specific piece type and color
@@ -374,49 +385,55 @@ impl Board {
         self.occupancy(Color::White) | self.occupancy(Color::Black)
     }
 
-    /// Set piece at square
+    /// Set piece at square - O(1)
+    #[inline(always)]
     pub fn set_piece(&mut self, square: Square, piece: Piece) {
+        let sq_idx = square.index();
         let color_idx = piece.color() as usize;
-        let bb = match piece.piece_type() {
-            PieceType::Pawn => &mut self.pawns[color_idx],
-            PieceType::Knight => &mut self.knights[color_idx],
-            PieceType::Bishop => &mut self.bishops[color_idx],
-            PieceType::Rook => &mut self.rooks[color_idx],
-            PieceType::Queen => &mut self.queens[color_idx],
-            PieceType::King => &mut self.kings[color_idx],
-        };
-        *bb = BitboardOps::set_bit(*bb, square);
+        let bit = 1u64 << sq_idx;
+
+        // Update bitboard
+        match piece.piece_type() {
+            PieceType::Pawn => self.pawns[color_idx] |= bit,
+            PieceType::Knight => self.knights[color_idx] |= bit,
+            PieceType::Bishop => self.bishops[color_idx] |= bit,
+            PieceType::Rook => self.rooks[color_idx] |= bit,
+            PieceType::Queen => self.queens[color_idx] |= bit,
+            PieceType::King => self.kings[color_idx] |= bit,
+        }
+
+        // Update mailbox
+        self.mailbox[sq_idx] = Some(piece);
     }
 
-    /// Clear piece at square
+    /// Clear piece at square - O(1)
+    #[inline(always)]
     pub fn clear_piece(&mut self, square: Square) {
-        for color_idx in 0..2 {
-            self.pawns[color_idx] = BitboardOps::clear_bit(self.pawns[color_idx], square);
-            self.knights[color_idx] = BitboardOps::clear_bit(self.knights[color_idx], square);
-            self.bishops[color_idx] = BitboardOps::clear_bit(self.bishops[color_idx], square);
-            self.rooks[color_idx] = BitboardOps::clear_bit(self.rooks[color_idx], square);
-            self.queens[color_idx] = BitboardOps::clear_bit(self.queens[color_idx], square);
-            self.kings[color_idx] = BitboardOps::clear_bit(self.kings[color_idx], square);
-        }
+        let sq_idx = square.index();
+        let clear_mask = !(1u64 << sq_idx);
+
+        // Clear from all bitboards
+        self.pawns[0] &= clear_mask;
+        self.pawns[1] &= clear_mask;
+        self.knights[0] &= clear_mask;
+        self.knights[1] &= clear_mask;
+        self.bishops[0] &= clear_mask;
+        self.bishops[1] &= clear_mask;
+        self.rooks[0] &= clear_mask;
+        self.rooks[1] &= clear_mask;
+        self.queens[0] &= clear_mask;
+        self.queens[1] &= clear_mask;
+        self.kings[0] &= clear_mask;
+        self.kings[1] &= clear_mask;
+
+        // Clear mailbox
+        self.mailbox[sq_idx] = None;
     }
 
-    /// Get piece at square
+    /// Get piece at square - O(1) via mailbox lookup
+    #[inline(always)]
     pub fn piece_at(&self, square: Square) -> Option<Piece> {
-        for color in [Color::White, Color::Black] {
-            for piece_type in [
-                PieceType::Pawn,
-                PieceType::Knight,
-                PieceType::Bishop,
-                PieceType::Rook,
-                PieceType::Queen,
-                PieceType::King,
-            ] {
-                if BitboardOps::get_bit(self.piece_bitboard(color, piece_type), square) {
-                    return Some(Piece::from_type_and_color(piece_type, color));
-                }
-            }
-        }
-        None
+        self.mailbox[square.index()]
     }
 
     /// Get side to move
@@ -467,6 +484,41 @@ impl Board {
     /// Swap side to move
     pub fn swap_side(&mut self) {
         self.side_to_move = self.side_to_move.opponent();
+    }
+
+    /// Set side to move
+    pub fn set_side_to_move(&mut self, color: Color) {
+        self.side_to_move = color;
+    }
+
+    /// Get halfmove clock
+    pub fn halfmove_clock(&self) -> u32 {
+        self.halfmove_clock
+    }
+
+    /// Set halfmove clock
+    pub fn set_halfmove_clock(&mut self, clock: u32) {
+        self.halfmove_clock = clock;
+    }
+
+    /// Get fullmove number
+    pub fn fullmove_number(&self) -> u32 {
+        self.fullmove_number
+    }
+
+    /// Set fullmove number
+    pub fn set_fullmove_number(&mut self, number: u32) {
+        self.fullmove_number = number;
+    }
+
+    /// Get castling rights as u8
+    pub fn castling_rights(&self) -> u8 {
+        self.castling_rights
+    }
+
+    /// Set castling rights
+    pub fn set_castling_rights(&mut self, rights: u8) {
+        self.castling_rights = rights;
     }
 
     // REQ-5: FEN Parsing and Generation
