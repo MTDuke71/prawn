@@ -113,7 +113,24 @@ Chess engines are fundamentally about **speed**. The ability to search deeper di
 - `req6_zobrist_hash_uniqueness`
 - `req7_threefold_repetition`
 
-#### **Mission 4: Position Evaluation**
+#### **Mission 4: Basic UCI / Debug Shell**
+**Focus**: Minimal UCI for interactive debugging and testing
+**Rationale**: Early UCI enables interactive perft testing, position setup debugging, and play-testing with random moves before evaluation/search are implemented.
+- REQ-1: UCI handshake (uci, uciok, isready, readyok)
+- REQ-2: Position setup (position startpos, position fen)
+- REQ-3: Position display (d command for debugging)
+- REQ-4: Perft command (go perft N)
+- REQ-5: Basic go command (returns random legal move)
+- REQ-6: Quit command
+
+**Tests**:
+- `req1_uci_handshake`
+- `req2_position_startpos`
+- `req2_position_fen`
+- `req4_perft_command`
+- `req5_go_returns_legal_move`
+
+#### **Mission 5: Position Evaluation**
 **Focus**: Static evaluation function
 **Performance**: Incremental updates where possible, avoid recomputation
 - REQ-1: Material counting (piece values)
@@ -129,7 +146,7 @@ Chess engines are fundamentally about **speed**. The ability to search deeper di
 - `req2_piece_square_bonus`
 - `req7_tapered_eval_endgame`
 
-#### **Mission 5: Search Algorithm**
+#### **Mission 6: Search Algorithm**
 **Focus**: Minimax search with alpha-beta pruning
 **Performance**: Move ordering critical for cutoffs, TT for avoiding re-search
 - REQ-1: Minimax search (basic)
@@ -147,23 +164,22 @@ Chess engines are fundamentally about **speed**. The ability to search deeper di
 - `req2_alpha_beta_prune_count`
 - `req5_transposition_table_hit`
 - `req6_move_ordering_improves_cutoffs`
-
-#### **Mission 6: UCI Protocol**
-**Focus**: Universal Chess Interface for GUI communication
-- REQ-1: UCI command parsing
-- REQ-2: Position setup (startpos, FEN)
-- REQ-3: Go command (search initiation)
-- REQ-4: Stop command (search termination)
-- REQ-5: Info output (depth, score, nodes, pv)
-- REQ-6: Bestmove output
-- REQ-7: Option handling (hash size, threads, etc.)
+#### **Mission 7: Full UCI Protocol**
+**Focus**: Complete UCI implementation with search integration
+- REQ-1: Go depth/movetime/infinite commands
+- REQ-2: Stop command (async search termination)
+- REQ-3: Info output (depth, score, nodes, nps, pv)
+- REQ-4: Bestmove with ponder move
+- REQ-5: Option handling (Hash, Threads, etc.)
+- REQ-6: UCI_Chess960 support (optional)
 
 **Tests**:
-- `req1_parse_uci_command`
-- `req2_position_startpos`
-- `req3_go_depth_command`
-- `req5_info_output_format`
-#### **Mission 7: Time Management**
+- `req1_go_depth_command`
+- `req2_stop_terminates_search`
+- `req3_info_output_format`
+- `req5_setoption_hash`
+
+#### **Mission 8: Time Management**
 **Focus**: Efficient time allocation during search
 - REQ-1: Fixed depth search
 - REQ-2: Fixed time search
@@ -176,13 +192,13 @@ Chess engines are fundamentally about **speed**. The ability to search deeper di
 - `req2_fixed_time_terminates`
 - `req3_tournament_time_allocation`
 
-#### **Mission 8: Opening Book** (Optional)
+#### **Mission 9: Opening Book** (Optional)
 **Focus**: Opening theory database
 - REQ-1: Polyglot book format parsing
 - REQ-2: Opening move selection
 - REQ-3: Book move weights
 
-#### **Mission 9: Endgame Tablebases** (Optional)
+#### **Mission 10: Endgame Tablebases** (Optional)
 **Focus**: Perfect endgame play
 - REQ-1: Syzygy tablebase probing
 - REQ-2: DTZ (distance-to-zero) evaluation
