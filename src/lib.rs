@@ -15,6 +15,9 @@ pub mod game_state;
 pub mod undo_info;
 pub mod zobrist;
 
+// Mission 4: Basic UCI / Debug Shell
+pub mod uci;
+
 // Re-export main types for convenience
 pub use attacks::AttackTables;
 pub use board_ext::BoardExt;
@@ -26,3 +29,6 @@ pub use moves::{Move, MoveList, MoveType};
 pub use game_state::GameState;
 pub use undo_info::UndoInfo;
 pub use zobrist::ZobristHasher;
+
+// Mission 4 re-exports
+pub use uci::UciHandler;
