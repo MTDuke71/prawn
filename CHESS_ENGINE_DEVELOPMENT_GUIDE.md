@@ -31,6 +31,24 @@
 - `cargo test --workspace` MUST pass (100% test success)
 - Documentation complete for all public APIs
 
+### 5. **Performance is Critical**
+Chess engines are fundamentally about **speed**. The ability to search deeper directly translates to stronger play. Every design decision must consider performance impact.
+
+**Speed Design Principles:**
+- **O(1) over O(n)**: Prefer constant-time operations (e.g., mailbox array for piece lookup vs iterating bitboards)
+- **Zero allocation in hot paths**: Use fixed-size arrays, avoid `Vec`, `HashMap`, `String` during search
+- **Inline critical functions**: Use `#[inline(always)]` on functions called millions of times per second
+- **Copy over Clone**: Small structs should be `Copy` for pass-by-value efficiency
+- **Static over instance**: Shared lookup tables (magic bitboards, Zobrist keys) should be `static`
+- **Cache locality**: Keep frequently-accessed data together in memory
+
+**Performance Targets:**
+- Move generation: >30 million nodes/second (release mode)
+- Make/unmake move: <100 nanoseconds per operation
+- Perft verification: Use to validate both correctness AND speed
+
+**Always benchmark in release mode**: Debug builds are 20-40x slower and give misleading performance data.
+
 ---
 
 ## 🎯 Chess Engine Mission Structure
@@ -39,6 +57,7 @@
 
 #### **Mission 1: Board Representation**
 **Focus**: Core data structure for chess board state
+**Performance**: O(1) piece lookup via hybrid bitboard + mailbox array
 - REQ-1: 8x8 board representation with piece placement
 - REQ-2: Bitboard support for efficient move generation
 - REQ-3: Piece type encoding (pawn, knight, bishop, rook, queen, king)
@@ -55,6 +74,7 @@
 
 #### **Mission 2: Move Generation**
 **Focus**: Legal move calculation for all piece types
+**Performance**: Magic bitboards for sliding pieces, >30M nodes/sec target
 - REQ-1: Pawn moves (single, double, capture, en passant)
 - REQ-2: Knight moves (L-shaped)
 - REQ-3: Bishop moves (diagonal)
@@ -78,6 +98,7 @@
 
 #### **Mission 3: Move Execution**
 **Focus**: Applying moves and maintaining game state
+**Performance**: Zero allocation (fixed arrays), static Zobrist tables, <100ns make/unmake
 - REQ-1: Make move (update board state)
 - REQ-2: Unmake move (restore previous state)
 - REQ-3: Move history tracking
@@ -94,6 +115,7 @@
 
 #### **Mission 4: Position Evaluation**
 **Focus**: Static evaluation function
+**Performance**: Incremental updates where possible, avoid recomputation
 - REQ-1: Material counting (piece values)
 - REQ-2: Piece-square tables (positional bonuses)
 - REQ-3: Pawn structure evaluation
@@ -109,6 +131,7 @@
 
 #### **Mission 5: Search Algorithm**
 **Focus**: Minimax search with alpha-beta pruning
+**Performance**: Move ordering critical for cutoffs, TT for avoiding re-search
 - REQ-1: Minimax search (basic)
 - REQ-2: Alpha-beta pruning
 - REQ-3: Iterative deepening
@@ -140,7 +163,6 @@
 - `req2_position_startpos`
 - `req3_go_depth_command`
 - `req5_info_output_format`
-
 #### **Mission 7: Time Management**
 **Focus**: Efficient time allocation during search
 - REQ-1: Fixed depth search
