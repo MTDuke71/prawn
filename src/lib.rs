@@ -18,6 +18,15 @@ pub mod zobrist;
 // Mission 4: Basic UCI / Debug Shell
 pub mod uci;
 
+// Mission 5: Position Evaluation
+pub mod eval;
+mod material;
+mod pst;
+mod pawn_structure;
+mod king_safety;
+mod mobility;
+mod center_control;
+
 // Re-export main types for convenience
 pub use attacks::AttackTables;
 pub use board_ext::BoardExt;
@@ -32,3 +41,6 @@ pub use zobrist::ZobristHasher;
 
 // Mission 4 re-exports
 pub use uci::UciHandler;
+
+// Mission 5 re-exports
+pub use eval::{EvalConfig, EvalBreakdown, Evaluator};
