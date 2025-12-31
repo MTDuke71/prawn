@@ -3,7 +3,7 @@
 //! A chess engine written in Rust.
 
 use prawn::board::{Board, Color, PieceType};
-use prawn::{GameState, Move, MoveGenerator};
+use prawn::{EvalConfig, Evaluator, GameState, Move, MoveGenerator};
 use std::io::{self, BufRead, Write};
 use std::time::Instant;
 
@@ -28,6 +28,7 @@ fn main() {
 fn run_uci() {
     let mut game = GameState::from_board(Board::default());
     let movegen = MoveGenerator::new();
+    let evaluator = Evaluator::new(EvalConfig::ALL);
     let stdin = io::stdin();
     let mut stdout = io::stdout();
 
@@ -83,6 +84,18 @@ fn run_uci() {
                 };
                 println!("Side to move: {}", side);
                 println!("Hash: {:016x}", game.zobrist_hash());
+            }
+            "eval" => {
+                let breakdown = evaluator.evaluate_breakdown(game.board());
+                println!("=== Evaluation Breakdown ===");
+                println!("Material:       {:+} cp", breakdown.material);
+                println!("Piece-Square:   {:+} cp", breakdown.piece_square);
+                println!("Pawn Structure: {:+} cp", breakdown.pawn_structure);
+                println!("King Safety:    {:+} cp", breakdown.king_safety);
+                println!("Mobility:       {:+} cp", breakdown.mobility);
+                println!("Center Control: {:+} cp", breakdown.center_control);
+                println!("----------------------------");
+                println!("Total:          {:+} cp", breakdown.total);
             }
             "quit" => break,
             _ => {} // Ignore unknown commands
