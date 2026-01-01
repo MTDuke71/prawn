@@ -3,12 +3,13 @@
 //! A chess engine written in Rust.
 
 use prawn::board::{Board, Color, PieceType};
-use prawn::{EvalConfig, Evaluator, GameState, Move, MoveGenerator};
+use prawn::{EvalConfig, Evaluator, GameState, Move, MoveGenerator, SearchConfig, Searcher};
 use std::io::{self, BufRead, Write};
 use std::time::Instant;
 
 const ENGINE_NAME: &str = "prawn 0.1";
 const ENGINE_AUTHOR: &str = "MTDuke71";
+const DEFAULT_DEPTH: u8 = 6;
 
 fn main() {
     // Check for command line arguments
@@ -28,7 +29,7 @@ fn main() {
 fn run_uci() {
     let mut game = GameState::from_board(Board::default());
     let movegen = MoveGenerator::new();
-    let evaluator = Evaluator::new(EvalConfig::ALL);
+    let evaluator = Evaluator::new(EvalConfig::FAST); // FAST excludes slow mobility eval
     let stdin = io::stdin();
     let mut stdout = io::stdout();
 
@@ -65,10 +66,40 @@ fn run_uci() {
                 if input.contains("perft") {
                     run_perft(input, &mut game, &movegen);
                 } else {
-                    // Return first legal move
-                    let moves = movegen.generate_legal_moves(game.board());
-                    if !moves.is_empty() {
-                        println!("bestmove {}", moves.moves()[0].to_uci());
+                    // Parse depth if specified
+                    let depth = parse_go_depth(input).unwrap_or(DEFAULT_DEPTH);
+                    
+                    // Search using default config
+                    let mut searcher = Searcher::new(SearchConfig::DEFAULT, &movegen, &evaluator);
+                    let start = Instant::now();
+                    let result = searcher.search(&mut game, depth);
+                    let elapsed = start.elapsed();
+                    
+                    // Print info
+                    let nps = if elapsed.as_secs_f64() > 0.0 {
+                        (result.nodes as f64 / elapsed.as_secs_f64()) as u64
+                    } else {
+                        0
+                    };
+                    
+                    let pv_str: String = result.pv.iter()
+                        .map(|m| m.to_uci())
+                        .collect::<Vec<_>>()
+                        .join(" ");
+                    
+                    println!(
+                        "info depth {} score cp {} nodes {} nps {} time {} pv {}",
+                        result.depth,
+                        result.score,
+                        result.nodes,
+                        nps,
+                        elapsed.as_millis(),
+                        pv_str
+                    );
+                    
+                    // Output best move
+                    if let Some(best) = result.best_move {
+                        println!("bestmove {}", best.to_uci());
                     } else {
                         println!("bestmove 0000");
                     }
@@ -103,6 +134,17 @@ fn run_uci() {
 
         let _ = stdout.flush();
     }
+}
+
+/// Parse depth from go command
+fn parse_go_depth(input: &str) -> Option<u8> {
+    let parts: Vec<&str> = input.split_whitespace().collect();
+    for i in 0..parts.len() {
+        if parts[i] == "depth" && i + 1 < parts.len() {
+            return parts[i + 1].parse().ok();
+        }
+    }
+    None
 }
 
 /// Parse a UCI position command

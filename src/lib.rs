@@ -27,6 +27,11 @@ mod king_safety;
 mod mobility;
 mod center_control;
 
+// Mission 6: Search Algorithm
+pub mod search;
+pub mod transposition;
+pub mod move_ordering;
+
 // Re-export main types for convenience
 pub use attacks::AttackTables;
 pub use board_ext::BoardExt;
@@ -44,3 +49,8 @@ pub use uci::UciHandler;
 
 // Mission 5 re-exports
 pub use eval::{EvalConfig, EvalBreakdown, Evaluator};
+
+// Mission 6 re-exports
+pub use search::{Searcher, SearchConfig, SearchResult, MoveOrderingConfig, MATE_SCORE};
+pub use transposition::{TranspositionTable, TTEntry, Bound};
+pub use move_ordering::MoveScore;

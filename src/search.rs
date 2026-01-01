@@ -3,15 +3,14 @@
 //! Modular negamax search with alpha-beta pruning and various enhancements.
 //! Each feature can be toggled for measuring ELO impact.
 
-use prawn::board::{Board, PieceType};
-use prawn::{Evaluator, GameState, Move, MoveGenerator};
+use crate::board::{Board, PieceType};
+use crate::{Evaluator, GameState, Move, MoveGenerator};
 
 use crate::transposition::{TranspositionTable, Bound};
 use crate::move_ordering::{order_moves, pick_best, KillerMoves, HistoryTable, MoveScore};
 
 /// Mate score constants
 pub const MATE_SCORE: i32 = 30000;
-pub const MATE_THRESHOLD: i32 = 29000;
 
 /// Configuration for move ordering features
 #[derive(Debug, Clone, Copy)]
@@ -113,6 +112,21 @@ impl SearchConfig {
         null_move_pruning: true,
         lmr: true,
         aspiration_windows: true,
+        null_move_r: 3,
+        lmr_threshold: 4,
+        qs_depth_limit: 8,
+    };
+    
+    /// Default config - good balance of speed and strength
+    pub const DEFAULT: Self = Self {
+        alpha_beta: true,
+        iterative_deepening: true,
+        quiescence: true,
+        transposition_table: true,
+        move_ordering: MoveOrderingConfig::ALL,
+        null_move_pruning: true,
+        lmr: true,
+        aspiration_windows: false,
         null_move_r: 3,
         lmr_threshold: 4,
         qs_depth_limit: 8,
@@ -366,13 +380,13 @@ impl<'a> Searcher<'a> {
         });
         
         // Order moves
-        let mut scored_moves = self.order_moves(game.board(), moves.moves(), tt_move);
+        let scored_moves = self.order_moves(game.board(), moves.moves(), tt_move);
         
         let mut best_move = None;
         let mut best_score = -MATE_SCORE;
         let mut alpha = alpha;
         
-        for (i, ms) in scored_moves.iter().enumerate() {
+        for (_i, ms) in scored_moves.iter().enumerate() {
             let mv = ms.mv;
             game.make_move(mv);
             self.ply += 1;
@@ -707,7 +721,6 @@ impl<'a> Searcher<'a> {
     }
     
     /// Check if position has non-pawn material (for null move pruning)
-    #[allow(dead_code)]
     fn has_non_pawn_material(&self, board: &Board) -> bool {
         let us = board.side_to_move();
         let our_pieces = board.occupancy(us);

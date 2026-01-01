@@ -39,6 +39,17 @@ impl EvalConfig {
         tapered_eval: true,
     };
     
+    /// Fast evaluation for search (no mobility/center - they create attack tables each call)
+    pub const FAST: EvalConfig = EvalConfig {
+        material: true,
+        piece_square_tables: true,
+        pawn_structure: true,
+        king_safety: true,
+        mobility: false,       // Disabled - creates attack tables each call
+        center_control: false, // Disabled - creates attack tables each call
+        tapered_eval: true,
+    };
+    
     /// Only material counting
     pub const MATERIAL_ONLY: EvalConfig = EvalConfig {
         material: true,
