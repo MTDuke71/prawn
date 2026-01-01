@@ -225,6 +225,59 @@ impl GameState {
         }
     }
 
+    /// Make a null move (pass turn to opponent)
+    /// Used for null move pruning in search
+    /// Returns the previous en passant square for unmake
+    #[inline]
+    pub fn make_null_move(&mut self) -> Option<Square> {
+        debug_assert!(self.ply < MAX_PLY, "Game too long!");
+
+        // Save current en passant square to restore later
+        let old_ep = self.board.en_passant_square();
+
+        // Update Zobrist hash: toggle side and remove en passant
+        self.current_hash ^= ZOBRIST.side_to_move;
+        if let Some(ep) = old_ep {
+            self.current_hash ^= ZOBRIST.en_passant[ep.file() as usize];
+        }
+
+        // Clear en passant (no pawn just moved two squares)
+        self.board.set_en_passant_square(None);
+
+        // Switch side to move
+        self.board.swap_side();
+
+        // Store a null move in history (for ply tracking)
+        self.move_history[self.ply] = Move::NULL;
+        self.position_hashes[self.ply] = self.current_hash;
+        self.ply += 1;
+
+        old_ep
+    }
+
+    /// Unmake a null move
+    /// Requires the en passant square that was active before the null move
+    #[inline]
+    pub fn unmake_null_move(&mut self, old_ep: Option<Square>) {
+        if self.ply == 0 {
+            return;
+        }
+
+        self.ply -= 1;
+
+        // Update Zobrist hash: toggle side back and restore en passant
+        self.current_hash ^= ZOBRIST.side_to_move;
+        if let Some(ep) = old_ep {
+            self.current_hash ^= ZOBRIST.en_passant[ep.file() as usize];
+        }
+
+        // Restore en passant square
+        self.board.set_en_passant_square(old_ep);
+
+        // Switch side back
+        self.board.swap_side();
+    }
+
     /// Check if current position is a threefold repetition
     /// Requirements Satisfied: REQ-7
     /// OPTIMIZED: Linear scan through position history (better cache locality than HashMap)

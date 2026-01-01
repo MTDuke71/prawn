@@ -463,6 +463,12 @@ impl<'a> Searcher<'a> {
     /// Alpha-beta search
     fn alpha_beta(&mut self, game: &mut GameState, depth: u8, mut alpha: i32, beta: i32, do_null: bool) -> i32 {
         self.nodes += 1;
+        
+        // Guard against exceeding array bounds (max ply = 127)
+        if self.ply >= 127 {
+            return self.evaluator.evaluate(game.board());
+        }
+        
         self.pv_length[self.ply] = 0;
         
         // Check for repetition (simple: draw)
@@ -498,28 +504,25 @@ impl<'a> Searcher<'a> {
             None
         };
         
-        // Null move pruning (disabled until GameState supports it)
-        // TODO: Add make_null_move/unmake_null_move to GameState
-        /*
+        // Null move pruning
         if self.config.null_move_pruning 
             && do_null 
             && !in_check 
             && depth >= 3
             && self.has_non_pawn_material(game.board())
         {
-            game.make_null_move();
+            let old_ep = game.make_null_move();
             self.ply += 1;
             
             let score = -self.alpha_beta(game, depth - 1 - self.config.null_move_r, -beta, -beta + 1, false);
             
             self.ply -= 1;
-            game.unmake_null_move();
+            game.unmake_null_move(old_ep);
             
             if score >= beta {
                 return beta;
             }
         }
-        */
         
         // Generate and order moves
         let moves = self.movegen.generate_legal_moves(game.board());
