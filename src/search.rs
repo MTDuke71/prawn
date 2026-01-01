@@ -9,6 +9,10 @@ use crate::{Evaluator, GameState, Move, MoveGenerator};
 use crate::transposition::{TranspositionTable, Bound};
 use crate::move_ordering::{order_moves, pick_best, KillerMoves, HistoryTable, MoveScore};
 
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::time::Instant;
+
 /// Mate score constants
 pub const MATE_SCORE: i32 = 30000;
 
@@ -266,10 +270,150 @@ pub struct SearchResult {
     pub score: i32,
     /// Depth searched
     pub depth: u8,
+    /// Selective depth (max depth reached in quiescence)
+    pub seldepth: u8,
     /// Nodes searched
     pub nodes: u64,
     /// Principal variation
     pub pv: Vec<Move>,
+}
+
+/// Search limits for time management
+#[derive(Debug, Clone)]
+pub struct SearchLimits {
+    /// Maximum depth to search
+    pub max_depth: u8,
+    /// Stop flag for async termination
+    pub stop_flag: Option<Arc<AtomicBool>>,
+    /// Start time of search
+    pub start_time: Option<Instant>,
+    /// Target time in ms (soft limit)
+    pub target_time_ms: Option<u64>,
+    /// Maximum time in ms (hard limit)  
+    pub max_time_ms: Option<u64>,
+    /// Node limit
+    pub node_limit: Option<u64>,
+    /// Infinite search mode
+    pub infinite: bool,
+}
+
+impl Default for SearchLimits {
+    fn default() -> Self {
+        Self {
+            max_depth: 64,
+            stop_flag: None,
+            start_time: None,
+            target_time_ms: None,
+            max_time_ms: None,
+            node_limit: None,
+            infinite: false,
+        }
+    }
+}
+
+impl SearchLimits {
+    /// Create limits for fixed depth search
+    pub fn depth(depth: u8) -> Self {
+        Self {
+            max_depth: depth,
+            ..Default::default()
+        }
+    }
+    
+    /// Create limits for fixed time search
+    pub fn movetime(time_ms: u64, stop_flag: Arc<AtomicBool>) -> Self {
+        Self {
+            max_depth: 64,
+            stop_flag: Some(stop_flag),
+            start_time: Some(Instant::now()),
+            target_time_ms: Some(time_ms),
+            max_time_ms: Some(time_ms),
+            node_limit: None,
+            infinite: false,
+        }
+    }
+    
+    /// Create limits for tournament time control
+    pub fn time_control(
+        target_ms: u64, 
+        max_ms: u64, 
+        stop_flag: Arc<AtomicBool>
+    ) -> Self {
+        Self {
+            max_depth: 64,
+            stop_flag: Some(stop_flag),
+            start_time: Some(Instant::now()),
+            target_time_ms: Some(target_ms),
+            max_time_ms: Some(max_ms),
+            node_limit: None,
+            infinite: false,
+        }
+    }
+    
+    /// Create limits for infinite search
+    pub fn infinite(stop_flag: Arc<AtomicBool>) -> Self {
+        Self {
+            max_depth: 64,
+            stop_flag: Some(stop_flag),
+            start_time: Some(Instant::now()),
+            target_time_ms: None,
+            max_time_ms: None,
+            node_limit: None,
+            infinite: true,
+        }
+    }
+    
+    /// Check if we should stop searching
+    #[inline]
+    pub fn should_stop(&self) -> bool {
+        // Check external stop flag
+        if let Some(ref flag) = self.stop_flag {
+            if flag.load(Ordering::Relaxed) {
+                return true;
+            }
+        }
+        
+        // Check hard time limit
+        if let (Some(start), Some(max_ms)) = (self.start_time, self.max_time_ms) {
+            if start.elapsed().as_millis() as u64 >= max_ms {
+                return true;
+            }
+        }
+        
+        false
+    }
+    
+    /// Check if we can start another iteration
+    #[inline]
+    pub fn can_start_iteration(&self) -> bool {
+        // Check external stop flag
+        if let Some(ref flag) = self.stop_flag {
+            if flag.load(Ordering::Relaxed) {
+                return false;
+            }
+        }
+        
+        // Infinite mode - always continue
+        if self.infinite {
+            return true;
+        }
+        
+        // Check target time limit
+        if let (Some(start), Some(target_ms)) = (self.start_time, self.target_time_ms) {
+            if start.elapsed().as_millis() as u64 >= target_ms {
+                return false;
+            }
+        }
+        
+        true
+    }
+    
+    /// Get elapsed time in ms
+    pub fn elapsed_ms(&self) -> u64 {
+        self.start_time
+            .map(|s| s.elapsed().as_millis() as u64)
+            .unwrap_or(0)
+    }
 }
 
 /// The search engine
@@ -282,8 +426,13 @@ pub struct Searcher<'a> {
     history: HistoryTable,
     nodes: u64,
     ply: usize,
+    seldepth: u8,
     pv_table: [[Option<Move>; 128]; 128],
     pv_length: [usize; 128],
+    limits: SearchLimits,
+    /// Callback for reporting search info
+    #[allow(clippy::type_complexity)]
+    info_callback: Option<Box<dyn Fn(&SearchResult, u64) + 'a>>,
 }
 
 impl<'a> Searcher<'a> {
@@ -304,14 +453,67 @@ impl<'a> Searcher<'a> {
             history: HistoryTable::new(),
             nodes: 0,
             ply: 0,
+            seldepth: 0,
             pv_table: [[None; 128]; 128],
             pv_length: [0; 128],
+            limits: SearchLimits::default(),
+            info_callback: None,
         }
     }
     
-    /// Search the position to the given depth
+    /// Create a new searcher with custom hash size
+    pub fn with_hash_size(config: SearchConfig, movegen: &'a MoveGenerator, evaluator: &'a Evaluator, hash_mb: usize) -> Self {
+        let tt = if config.transposition_table && hash_mb > 0 {
+            Some(TranspositionTable::new(hash_mb))
+        } else {
+            None
+        };
+        
+        Self {
+            config,
+            movegen,
+            evaluator,
+            tt,
+            killers: KillerMoves::new(),
+            history: HistoryTable::new(),
+            nodes: 0,
+            ply: 0,
+            seldepth: 0,
+            pv_table: [[None; 128]; 128],
+            pv_length: [0; 128],
+            limits: SearchLimits::default(),
+            info_callback: None,
+        }
+    }
+    
+    /// Set a callback for info output during search
+    pub fn set_info_callback<F: Fn(&SearchResult, u64) + 'a>(&mut self, callback: F) {
+        self.info_callback = Some(Box::new(callback));
+    }
+    
+    /// Clear the transposition table
+    pub fn clear_tt(&mut self) {
+        if let Some(ref mut tt) = self.tt {
+            tt.clear();
+        }
+    }
+    
+    /// Get hashfull (permill of TT entries used)
+    pub fn hashfull(&self) -> Option<u32> {
+        self.tt.as_ref().map(|tt| tt.hashfull() as u32)
+    }
+    
+    /// Search the position to the given depth (simple API)
     pub fn search(&mut self, game: &mut GameState, depth: u8) -> SearchResult {
+        let limits = SearchLimits::depth(depth);
+        self.search_with_limits(game, limits)
+    }
+    
+    /// Search with full time/depth limits (full API for UCI)
+    pub fn search_with_limits(&mut self, game: &mut GameState, limits: SearchLimits) -> SearchResult {
         self.nodes = 0;
+        self.seldepth = 0;
+        self.limits = limits;
         self.killers.clear();
         
         if let Some(ref mut tt) = self.tt {
@@ -319,9 +521,9 @@ impl<'a> Searcher<'a> {
         }
         
         if self.config.iterative_deepening {
-            self.iterative_deepening(game, depth)
+            self.iterative_deepening(game, self.limits.max_depth)
         } else {
-            self.search_root(game, depth)
+            self.search_root(game, self.limits.max_depth)
         }
     }
     
@@ -331,21 +533,38 @@ impl<'a> Searcher<'a> {
             best_move: None,
             score: 0,
             depth: 0,
+            seldepth: 0,
             nodes: 0,
             pv: Vec::new(),
         };
         
         for depth in 1..=max_depth {
+            // Check if we can start another iteration
+            if depth > 1 && !self.limits.can_start_iteration() {
+                break;
+            }
+            
             let result = self.search_root(game, depth);
+            
+            // If we were stopped mid-search, don't use partial results
+            if self.limits.should_stop() && depth > 1 {
+                break;
+            }
             
             // Update best result
             best_result = SearchResult {
                 best_move: result.best_move,
                 score: result.score,
                 depth,
+                seldepth: self.seldepth,
                 nodes: self.nodes,
                 pv: result.pv,
             };
+            
+            // Report info at each depth
+            if let Some(ref callback) = self.info_callback {
+                callback(&best_result, self.limits.elapsed_ms());
+            }
         }
         
         best_result
@@ -369,6 +588,7 @@ impl<'a> Searcher<'a> {
                 best_move: None,
                 score,
                 depth,
+                seldepth: 0,
                 nodes: self.nodes,
                 pv: Vec::new(),
             };
@@ -386,7 +606,12 @@ impl<'a> Searcher<'a> {
         let mut best_score = -MATE_SCORE;
         let mut alpha = alpha;
         
-        for (_i, ms) in scored_moves.iter().enumerate() {
+        for ms in &scored_moves {
+            // Check for stop
+            if self.limits.should_stop() {
+                break;
+            }
+            
             let mv = ms.mv;
             game.make_move(mv);
             self.ply += 1;
@@ -431,6 +656,7 @@ impl<'a> Searcher<'a> {
             best_move,
             score: best_score,
             depth,
+            seldepth: self.seldepth,
             nodes: self.nodes,
             pv,
         }
@@ -484,6 +710,11 @@ impl<'a> Searcher<'a> {
         }
         
         self.pv_length[self.ply] = 0;
+        
+        // Check for stop (every 1024 nodes to reduce overhead)
+        if (self.nodes & 1023) == 0 && self.limits.should_stop() {
+            return alpha;
+        }
         
         // Check for repetition (simple: draw)
         // TODO: implement proper repetition detection
@@ -554,9 +785,9 @@ impl<'a> Searcher<'a> {
         
         let mut best_move = None;
         let mut best_score = -MATE_SCORE;
-        let mut moves_searched = 0;
         
-        for i in 0..scored_moves.len() {
+        #[allow(clippy::explicit_counter_loop)]
+        for (moves_searched, i) in (0..scored_moves.len()).enumerate() {
             // Incremental sorting: pick best for this iteration
             pick_best(&mut scored_moves, i);
             let mv = scored_moves[i].mv;
@@ -587,8 +818,6 @@ impl<'a> Searcher<'a> {
             
             self.ply -= 1;
             game.unmake_move();
-            
-            moves_searched += 1;
             
             if score > best_score {
                 best_score = score;
@@ -634,6 +863,12 @@ impl<'a> Searcher<'a> {
     /// Quiescence search - search captures until position is quiet
     fn quiescence(&mut self, game: &mut GameState, mut alpha: i32, beta: i32, qs_depth: i32) -> i32 {
         self.nodes += 1;
+        
+        // Track selective depth
+        let current_depth = self.ply as u8 + qs_depth as u8;
+        if current_depth > self.seldepth {
+            self.seldepth = current_depth;
+        }
         
         // Stand pat
         let stand_pat = self.evaluator.evaluate(game.board());

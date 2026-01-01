@@ -3,8 +3,13 @@
 //! A chess engine written in Rust.
 
 use prawn::board::{Board, Color, PieceType};
-use prawn::{EvalConfig, Evaluator, GameState, Move, MoveGenerator, SearchConfig, Searcher};
+use prawn::{
+    EvalConfig, Evaluator, GameState, Move, MoveGenerator, 
+    SearchConfig, SearchLimits, Searcher, SearchParams, EngineOptions, InfoReporter
+};
 use std::io::{self, BufRead, Write};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use std::time::Instant;
 
 const ENGINE_NAME: &str = "prawn 0.1";
@@ -30,6 +35,8 @@ fn run_uci() {
     let mut game = GameState::from_board(Board::default());
     let movegen = MoveGenerator::new();
     let evaluator = Evaluator::new(EvalConfig::FAST); // FAST excludes slow mobility eval
+    let mut options = EngineOptions::default();
+    let stop_flag = Arc::new(AtomicBool::new(false));
     let stdin = io::stdin();
     let mut stdout = io::stdout();
 
@@ -51,6 +58,7 @@ fn run_uci() {
             "uci" => {
                 println!("id name {}", ENGINE_NAME);
                 println!("id author {}", ENGINE_AUTHOR);
+                println!("{}", EngineOptions::print_options());
                 println!("uciok");
             }
             "isready" => {
@@ -59,6 +67,20 @@ fn run_uci() {
             "ucinewgame" => {
                 game = GameState::from_board(Board::default());
             }
+            "setoption" => {
+                // Parse "setoption name X value Y"
+                if let Some(name_start) = input.find("name ") {
+                    let after_name = &input[name_start + 5..];
+                    let (name, value) = if let Some(value_start) = after_name.find(" value ") {
+                        (&after_name[..value_start], Some(&after_name[value_start + 7..]))
+                    } else {
+                        (after_name.trim(), None)
+                    };
+                    if let Some(val) = value {
+                        options.set_option(name.trim(), val.trim());
+                    }
+                }
+            }
             "position" => {
                 game = parse_position(input, &movegen);
             }
@@ -66,44 +88,53 @@ fn run_uci() {
                 if input.contains("perft") {
                     run_perft(input, &mut game, &movegen);
                 } else {
-                    // Parse depth if specified
-                    let depth = parse_go_depth(input).unwrap_or(DEFAULT_DEPTH);
+                    // Reset stop flag before search
+                    stop_flag.store(false, Ordering::Relaxed);
                     
-                    // Search using default config
-                    let mut searcher = Searcher::new(SearchConfig::DEFAULT, &movegen, &evaluator);
-                    let start = Instant::now();
-                    let result = searcher.search(&mut game, depth);
-                    let elapsed = start.elapsed();
+                    // Parse search parameters
+                    let params = SearchParams::parse(input);
                     
-                    // Print info
-                    let nps = if elapsed.as_secs_f64() > 0.0 {
-                        (result.nodes as f64 / elapsed.as_secs_f64()) as u64
-                    } else {
-                        0
-                    };
+                    // Create search limits from parameters
+                    let limits = create_search_limits(&params, game.board().side_to_move(), stop_flag.clone());
                     
-                    let pv_str: String = result.pv.iter()
-                        .map(|m| m.to_uci())
-                        .collect::<Vec<_>>()
-                        .join(" ");
-                    
-                    println!(
-                        "info depth {} score cp {} nodes {} nps {} time {} pv {}",
-                        result.depth,
-                        result.score,
-                        result.nodes,
-                        nps,
-                        elapsed.as_millis(),
-                        pv_str
+                    // Create searcher with custom hash size
+                    let mut searcher = Searcher::with_hash_size(
+                        SearchConfig::DEFAULT, 
+                        &movegen, 
+                        &evaluator,
+                        options.hash_size_mb
                     );
+                    
+                    // Set up info callback for iterative deepening output
+                    let info_reporter = InfoReporter::new(true);
+                    searcher.set_info_callback(move |result, time_ms| {
+                        let hashfull = None; // Could get from searcher if accessible
+                        info_reporter.report_depth(
+                            result.depth,
+                            result.seldepth,
+                            result.score,
+                            result.nodes,
+                            time_ms,
+                            &result.pv,
+                            hashfull,
+                        );
+                    });
+                    
+                    // Run search
+                    let result = searcher.search_with_limits(&mut game, limits);
                     
                     // Output best move
                     if let Some(best) = result.best_move {
-                        println!("bestmove {}", best.to_uci());
+                        // Try to get ponder move from PV
+                        let ponder = result.pv.get(1).map(|m| format!(" ponder {}", m.to_uci())).unwrap_or_default();
+                        println!("bestmove {}{}", best.to_uci(), ponder);
                     } else {
                         println!("bestmove 0000");
                     }
                 }
+            }
+            "stop" => {
+                stop_flag.store(true, Ordering::Relaxed);
             }
             "d" => {
                 println!("{}", game.board());
@@ -136,15 +167,51 @@ fn run_uci() {
     }
 }
 
-/// Parse depth from go command
-fn parse_go_depth(input: &str) -> Option<u8> {
-    let parts: Vec<&str> = input.split_whitespace().collect();
-    for i in 0..parts.len() {
-        if parts[i] == "depth" && i + 1 < parts.len() {
-            return parts[i + 1].parse().ok();
-        }
+/// Create SearchLimits from UCI SearchParams
+fn create_search_limits(params: &SearchParams, side: Color, stop_flag: Arc<AtomicBool>) -> SearchLimits {
+    // Fixed depth
+    if let Some(depth) = params.depth {
+        return SearchLimits {
+            max_depth: depth,
+            stop_flag: Some(stop_flag),
+            start_time: Some(Instant::now()),
+            ..Default::default()
+        };
     }
-    None
+    
+    // Fixed movetime
+    if let Some(movetime) = params.movetime {
+        return SearchLimits::movetime(movetime, stop_flag);
+    }
+    
+    // Infinite
+    if params.infinite {
+        return SearchLimits::infinite(stop_flag);
+    }
+    
+    // Tournament time control
+    if params.wtime.is_some() || params.btime.is_some() {
+        let (time, inc) = match side {
+            Color::White => (params.wtime.unwrap_or(60000), params.winc.unwrap_or(0)),
+            Color::Black => (params.btime.unwrap_or(60000), params.binc.unwrap_or(0)),
+        };
+        
+        // Time management formula
+        let moves_to_go = params.movestogo.unwrap_or(40) as u64;
+        let base_time = time / moves_to_go;
+        let target = (base_time + (inc * 3 / 4)).min(time.saturating_sub(50));
+        let max = (time / 10).min(time.saturating_sub(50)).max(target);
+        
+        return SearchLimits::time_control(target, max, stop_flag);
+    }
+    
+    // Default: fixed depth
+    SearchLimits {
+        max_depth: DEFAULT_DEPTH,
+        stop_flag: Some(stop_flag),
+        start_time: Some(Instant::now()),
+        ..Default::default()
+    }
 }
 
 /// Parse a UCI position command
@@ -215,9 +282,8 @@ fn parse_move(move_str: &str, game: &GameState, movegen: &MoveGenerator) -> Opti
                 if mv.is_promotion() && mv.promotion() == Some(promo) {
                     return Some(*mv);
                 }
-            } else if !mv.is_promotion() {
-                return Some(*mv);
-            } else if mv.promotion() == Some(PieceType::Queen) {
+            } else if !mv.is_promotion() || mv.promotion() == Some(PieceType::Queen) {
+                // Non-promotion move, or default promotion to queen
                 return Some(*mv);
             }
         }

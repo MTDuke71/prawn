@@ -66,7 +66,7 @@ fn evaluate_pawn_shield(our_pawns: u64, king_sq: Square, color: Color) -> i32 {
     // Check files around the king (current file and adjacent)
     for file_offset in -1i32..=1 {
         let file = king_file as i32 + file_offset;
-        if file < 0 || file > 7 {
+        if !(0..=7).contains(&file) {
             continue;
         }
         
@@ -107,7 +107,7 @@ fn evaluate_king_file_safety(our_pawns: u64, their_pawns: u64, king_file: usize)
     // Check king's file and adjacent files
     for file_offset in -1i32..=1 {
         let file = king_file as i32 + file_offset;
-        if file < 0 || file > 7 {
+        if !(0..=7).contains(&file) {
             continue;
         }
         

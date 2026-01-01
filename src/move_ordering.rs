@@ -218,10 +218,10 @@ pub fn pick_best(scored_moves: &mut [MoveScore], start_idx: usize) {
     let mut best_idx = start_idx;
     let mut best_score = scored_moves[start_idx].score;
     
-    for i in (start_idx + 1)..scored_moves.len() {
-        if scored_moves[i].score > best_score {
-            best_score = scored_moves[i].score;
-            best_idx = i;
+    for (offset, ms) in scored_moves[(start_idx + 1)..].iter().enumerate() {
+        if ms.score > best_score {
+            best_score = ms.score;
+            best_idx = start_idx + 1 + offset;
         }
     }
     

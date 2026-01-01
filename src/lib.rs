@@ -51,6 +51,9 @@ pub use uci::UciHandler;
 pub use eval::{EvalConfig, EvalBreakdown, Evaluator};
 
 // Mission 6 re-exports
-pub use search::{Searcher, SearchConfig, SearchResult, MoveOrderingConfig, MATE_SCORE};
+pub use search::{Searcher, SearchConfig, SearchResult, SearchLimits, MoveOrderingConfig, MATE_SCORE};
 pub use transposition::{TranspositionTable, TTEntry, Bound};
 pub use move_ordering::MoveScore;
+
+// Mission 7 re-exports (Full UCI)
+pub use uci::{SearchParams, EngineOptions, TimeManager, InfoReporter};
