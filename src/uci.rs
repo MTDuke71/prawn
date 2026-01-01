@@ -18,13 +18,10 @@
 //! - REQ-5: UCI options (Hash)
 
 use crate::board::{Board, Color, PieceType};
-use crate::{GameState, Move, MoveGenerator};
+use crate::{GameState, Move, MoveGenerator, engine_id, ENGINE_AUTHOR};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-
-const ENGINE_NAME: &str = "prawn 0.1";
-const ENGINE_AUTHOR: &str = "MTDuke71";
 
 // =============================================================================
 // Mission 7: Search Parameters
@@ -474,7 +471,7 @@ impl UciHandler {
     fn cmd_uci(&self) -> String {
         format!(
             "id name {}\nid author {}\n{}\nuciok",
-            ENGINE_NAME, ENGINE_AUTHOR, EngineOptions::print_options()
+            engine_id(), ENGINE_AUTHOR, EngineOptions::print_options()
         )
     }
 

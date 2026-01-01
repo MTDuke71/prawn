@@ -31,7 +31,7 @@ fn req1_uci_contains_engine_name() {
     let mut handler = UciHandler::new();
     let output = handler.process_command("uci");
 
-    assert!(output.contains("prawn"), "Engine name should be 'prawn'");
+    assert!(output.contains("Prawn"), "Engine name should be 'Prawn'");
 }
 
 // =============================================================================

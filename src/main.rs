@@ -5,15 +5,14 @@
 use prawn::board::{Board, Color, PieceType};
 use prawn::{
     EvalConfig, Evaluator, GameState, Move, MoveGenerator, 
-    SearchConfig, SearchLimits, Searcher, SearchParams, EngineOptions, InfoReporter
+    SearchConfig, SearchLimits, Searcher, SearchParams, EngineOptions, InfoReporter,
+    engine_id, ENGINE_AUTHOR
 };
 use std::io::{self, BufRead, Write};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Instant;
 
-const ENGINE_NAME: &str = "prawn 0.1";
-const ENGINE_AUTHOR: &str = "MTDuke71";
 const DEFAULT_DEPTH: u8 = 6;
 
 fn main() {
@@ -56,7 +55,7 @@ fn run_uci() {
 
         match command {
             "uci" => {
-                println!("id name {}", ENGINE_NAME);
+                println!("id name {}", engine_id());
                 println!("id author {}", ENGINE_AUTHOR);
                 println!("{}", EngineOptions::print_options());
                 println!("uciok");
@@ -370,7 +369,7 @@ fn perft(game: &mut GameState, movegen: &MoveGenerator, depth: u8) -> u64 {
 
 /// Run benchmark
 fn run_benchmark() {
-    println!("{} - Benchmark", ENGINE_NAME);
+    println!("{} - Benchmark", engine_id());
     println!();
 
     let movegen = MoveGenerator::new();

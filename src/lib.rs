@@ -1,5 +1,16 @@
 // Library root
 
+// Version and build information
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");
+pub const ENGINE_NAME: &str = "Prawn";
+pub const ENGINE_AUTHOR: &str = "MTDuke71";
+pub const BUILD_TIMESTAMP: &str = env!("BUILT_TIMESTAMP");
+
+/// Returns the full engine identification string
+pub fn engine_id() -> String {
+    format!("{} v{} (built {})", ENGINE_NAME, VERSION, BUILD_TIMESTAMP)
+}
+
 // Mission 1: Board Representation
 pub mod board;
 

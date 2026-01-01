@@ -2,6 +2,11 @@
 name = "prawn"
 version = "0.1.0"
 edition = "2021"
+authors = ["MTDuke71"]
+description = "A fast chess engine written in Rust"
+license = "MIT"
+repository = "https://github.com/MTDuke71/prawn"
+build = "build.rs"
 
 [workspace]
 members = [
@@ -16,3 +21,8 @@ members = [
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"
