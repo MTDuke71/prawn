@@ -208,7 +208,9 @@ impl TimeManager {
         
         // Fixed movetime
         if let Some(movetime) = params.movetime {
-            return (movetime, movetime);
+            // Leave small buffer for move transmission
+            let safe_time = movetime.saturating_sub(20);
+            return (safe_time, safe_time);
         }
         
         // Tournament time control
@@ -220,25 +222,63 @@ impl TimeManager {
         let time = time.unwrap_or(60000);
         let inc = inc.unwrap_or(0);
         
-        // Time management formula:
-        // - Assume ~40 moves per game
-        // - Use more time with increment available
-        let moves_to_go = params.movestogo.unwrap_or(40) as u64;
+        // Move overhead - time needed for GUI communication
+        const MOVE_OVERHEAD_MS: u64 = 50;
         
-        // Base time per move
-        let base_time = time / moves_to_go;
+        // Safety buffer - always keep this much time in reserve
+        const SAFETY_BUFFER_MS: u64 = 100;
         
-        // Add some increment
-        let target = base_time + (inc * 3 / 4);
+        // Usable time after safety margins
+        let usable_time = time.saturating_sub(SAFETY_BUFFER_MS);
         
-        // Don't use more than 10% of remaining time
-        let max = time / 10;
+        // Time management formula depends on time control type
+        let (target, max) = if let Some(mtg) = params.movestogo {
+            // Sudden death at move N (e.g., 40/5 = 40 moves in 5 minutes)
+            // Be more conservative - need to make ALL moves before time runs out
+            let moves = mtg as u64;
+            
+            if moves <= 1 {
+                // Last move before time control - use most of remaining time
+                let target = (usable_time * 80 / 100).saturating_sub(MOVE_OVERHEAD_MS);
+                let max = (usable_time * 95 / 100).saturating_sub(MOVE_OVERHEAD_MS);
+                (target, max)
+            } else {
+                // Divide time evenly with small buffer
+                // Use slightly less than equal share to have reserve for later moves
+                let base_per_move = usable_time / moves;
+                let target = (base_per_move * 85 / 100) + (inc * 3 / 4);
+                // Max is the full share plus a bit for complex positions
+                let max = base_per_move + (inc * 3 / 4);
+                (target.saturating_sub(MOVE_OVERHEAD_MS), max.saturating_sub(MOVE_OVERHEAD_MS))
+            }
+        } else {
+            // Increment-based time control (e.g., 2+2, 5+3)
+            // Assume ~40 moves remaining, but be adaptive
+            let moves_estimate = 40u64;
+            
+            // Base time per move
+            let base_time = usable_time / moves_estimate;
+            
+            // Add most of the increment
+            let target = base_time + (inc * 3 / 4);
+            
+            // Max can be more generous with increment
+            let max = if inc > 0 {
+                // With increment, we can use up to 3x target for critical positions
+                (target * 3).min(usable_time / 4)
+            } else {
+                // Without increment, be more conservative
+                (target * 2).min(usable_time / 8)
+            };
+            
+            (target.saturating_sub(MOVE_OVERHEAD_MS), max.saturating_sub(MOVE_OVERHEAD_MS))
+        };
         
-        // Safety margin - leave at least 50ms
-        let target = target.min(time.saturating_sub(50));
-        let max = max.min(time.saturating_sub(50));
+        // Final sanity checks
+        let target = target.max(10); // At least 10ms to think
+        let max = max.max(target);   // Max >= target
         
-        (target, max.max(target))
+        (target, max)
     }
     
     /// Check if we should stop searching
@@ -833,8 +873,9 @@ mod tests {
         let stop = Arc::new(AtomicBool::new(false));
         let tm = TimeManager::new(&params, Color::White, stop);
         
-        assert_eq!(tm.target_time_ms, 1000);
-        assert_eq!(tm.max_time_ms, 1000);
+        // Should be movetime minus small overhead (20ms)
+        assert_eq!(tm.target_time_ms, 980);
+        assert_eq!(tm.max_time_ms, 980);
     }
     
     #[test]
@@ -852,6 +893,46 @@ mod tests {
         // Should get reasonable target time
         assert!(tm.target_time_ms > 0);
         assert!(tm.target_time_ms < 60000);
+    }
+    
+    #[test]
+    fn req1_time_manager_moves_to_go() {
+        // 40 moves in 5 minutes (300000ms) - the 40/5 time control
+        let params = SearchParams {
+            wtime: Some(300000),
+            btime: Some(300000),
+            movestogo: Some(40),
+            ..Default::default()
+        };
+        let stop = Arc::new(AtomicBool::new(false));
+        let tm = TimeManager::new(&params, Color::White, stop);
+        
+        // 300000ms / 40 moves = 7500ms per move
+        // With safety margins, should be less than that
+        // Target should be ~85% of 7500 = ~6375ms minus overhead
+        assert!(tm.target_time_ms > 5000, "Target should be > 5000ms, got {}", tm.target_time_ms);
+        assert!(tm.target_time_ms < 7500, "Target should be < 7500ms, got {}", tm.target_time_ms);
+        
+        // Max should be roughly the full share
+        assert!(tm.max_time_ms >= tm.target_time_ms);
+        assert!(tm.max_time_ms < 10000, "Max should be < 10000ms, got {}", tm.max_time_ms);
+    }
+    
+    #[test]
+    fn req1_time_manager_last_move_before_control() {
+        // Last move before time control - movestogo = 1
+        let params = SearchParams {
+            wtime: Some(10000), // 10 seconds left
+            btime: Some(10000),
+            movestogo: Some(1),
+            ..Default::default()
+        };
+        let stop = Arc::new(AtomicBool::new(false));
+        let tm = TimeManager::new(&params, Color::White, stop);
+        
+        // Should use most of remaining time (80%)
+        assert!(tm.target_time_ms > 7000, "Should use most of time, got {}", tm.target_time_ms);
+        assert!(tm.target_time_ms < 9000, "But leave safety margin, got {}", tm.target_time_ms);
     }
     
     #[test]
